@@ -1,0 +1,22 @@
+[package]
+name = "iffy"
+authors = ["Laurence Tratt <laurie@tratt.net>"]
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+css-minify = "0.3"
+deque = "0.3"
+filetime = "0.2"
+flate2 = "1"
+ignore = "0.4"
+num_cpus = "1"
+once_cell = "1"
+pulldown-cmark = { git = "https://github.com/raphlinus/pulldown-cmark" }
+regex = "1"
+rpools = "0.3"
+syntect = "5"
+tera = "1"
+toml = "0.8"
+url = "2"
+wyhash = "0.5"
