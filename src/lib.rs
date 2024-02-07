@@ -305,6 +305,9 @@ impl Iffy {
                 toml::Value::Boolean(b) => {
                     ctx.insert(k, b);
                 }
+                toml::Value::Array(x) => {
+                    ctx.insert(k, x);
+                }
                 _ => todo!(),
             }
         }
