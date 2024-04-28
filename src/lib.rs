@@ -551,6 +551,11 @@ impl Iffy {
                 return Err(format!("Footnote '{k}' has no matching definition").into());
             }
         }
+        for (k, _) in fnotes.iter() {
+            if !fnotes_seen.contains_key(k) {
+                return Err(format!("Footnote '{k}' is not referenced in the text").into());
+            }
+        }
         fnotes.sort_unstable_by(|a, b| fnotes_seen[&a.0].partial_cmp(&fnotes_seen[&b.0]).unwrap());
 
         Ok((ev_out, fnotes))
