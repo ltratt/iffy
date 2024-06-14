@@ -627,7 +627,7 @@ where
             id,
         }) => Event::Start(Tag::Link {
             link_type,
-            dest_url: host.join(&dest_url.to_string()).unwrap().to_string().into(),
+            dest_url: host.join(&dest_url.as_ref()).unwrap().to_string().into(),
             title,
             id,
         }),
@@ -638,7 +638,7 @@ where
             id,
         }) => Event::Start(Tag::Image {
             link_type,
-            dest_url: host.join(&dest_url.to_string()).unwrap().to_string().into(),
+            dest_url: host.join(&dest_url.as_ref()).unwrap().to_string().into(),
             title,
             id,
         }),
