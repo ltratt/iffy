@@ -324,6 +324,7 @@ impl Iffy {
         } else {
             ev.into_iter().collect::<Vec<_>>()
         };
+        let ev = titles_to_links(ev.into_iter());
         let ev = img_to_video(ev.into_iter());
         let ev = self.highlighter.highlight(ev.into_iter())?;
         // Footnote extraction must come last as it extracts data (i.e. if it comes earlier in the
@@ -582,6 +583,58 @@ impl<
     fn is_safe(&self) -> bool {
         true
     }
+}
+
+/// Rewrite `<h1>Blah1 Blah2!</h2>` to `<h1><a name="blah1_blah2">Blah1 Blah2!</a></h1>` (and for
+/// `H2`, `H3` etc.)
+pub fn titles_to_links<'a, It>(ev_in: It) -> impl Iterator<Item = Event<'a>>
+where
+    It: IntoIterator<Item = Event<'a>>,
+{
+    let mut ev_in = ev_in.into_iter();
+    let mut ev_out = Vec::new();
+    let mut next = ev_in.next();
+    while let Some(e) = next {
+        match e {
+            Event::Start(Tag::Heading { .. }) => {
+                ev_out.push(e);
+                next = ev_in.next();
+                let mut title_txt = Vec::new();
+                let mut title_ev = Vec::new();
+                loop {
+                    match next {
+                        Some(Event::End(TagEnd::Heading(_))) => break,
+                        Some(Event::Text(ref s)) => {
+                            title_txt.push(s.to_owned());
+                            title_ev.push(Event::Text(s.clone()));
+                        }
+                        Some(x) => title_ev.push(x),
+                        None => panic!(),
+                    }
+                    next = ev_in.next();
+                }
+                let link_name = title_txt
+                    .iter()
+                    .map(|x| {
+                        x.to_lowercase()
+                            .replace(' ', "_")
+                            .chars()
+                            .filter(|x| *x == '_' || x.is_alphanumeric())
+                            .collect::<String>()
+                    })
+                    .collect::<Vec<_>>()
+                    .join("_");
+                ev_out.push(Event::Html(format!(r#"<a name="{link_name}">"#).into()));
+                ev_out.extend_from_slice(title_ev.as_slice());
+                ev_out.push(Event::Html("</a>".into()));
+            }
+            _ => {
+                ev_out.push(e);
+                next = ev_in.next();
+            }
+        }
+    }
+    ev_out.into_iter()
 }
 
 /// Rewrite `<img src="x.mp4">` to `<video><source src="x.mp4"></video>`.
