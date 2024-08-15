@@ -324,7 +324,7 @@ impl Iffy {
         } else {
             ev.into_iter().collect::<Vec<_>>()
         };
-        let ev = titles_to_links(ev.into_iter());
+        let ev = titles_to_links(ev);
         let ev = img_to_video(ev.into_iter());
         let ev = self.highlighter.highlight(ev.into_iter())?;
         // Footnote extraction must come last as it extracts data (i.e. if it comes earlier in the
@@ -680,7 +680,7 @@ where
             id,
         }) => Event::Start(Tag::Link {
             link_type,
-            dest_url: host.join(&dest_url.as_ref()).unwrap().to_string().into(),
+            dest_url: host.join(dest_url.as_ref()).unwrap().to_string().into(),
             title,
             id,
         }),
@@ -691,7 +691,7 @@ where
             id,
         }) => Event::Start(Tag::Image {
             link_type,
-            dest_url: host.join(&dest_url.as_ref()).unwrap().to_string().into(),
+            dest_url: host.join(dest_url.as_ref()).unwrap().to_string().into(),
             title,
             id,
         }),
