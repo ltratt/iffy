@@ -26,6 +26,7 @@ const CSS_EXTENSION: &str = "css";
 const MARKDOWN_EXTENSION: &str = "md";
 const HTML_EXTENSION: &str = "html";
 const TERAFY_EXTENSIONS: &[&str] = &["rss"];
+const GZIPIFY_EXTENSIONS: &[&str] = &["svg"];
 
 static RE_TOML: Lazy<Regex> = Lazy::new(|| {
     RegexBuilder::new(r"\A\+\+\+\s*?$(.*?)^\+\+\+\s*$")
@@ -217,6 +218,11 @@ impl Iffy {
                     &outp,
                     tera_err(self.tera.lock().unwrap().render_str(&d, &Context::new())),
                 )?;
+                Some(outp)
+            } else if GZIPIFY_EXTENSIONS.contains(&x) {
+                let d = read_to_string(inp)?;
+                let outp = self.site_to_out(inp);
+                fs::write(&outp, d)?;
                 Some(outp)
             } else {
                 None
