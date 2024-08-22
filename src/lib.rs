@@ -274,7 +274,7 @@ impl Iffy {
         let d = read_to_string(inp)?;
         let rawcss = tera_err(self.tera.lock().unwrap().render_str(&d, &Context::new()));
         let css = if self.deploy {
-            let mut m = css_minify::optimizations::Minifier::default();
+            let m = css_minify::optimizations::Minifier::default();
             m.minify(&rawcss, css_minify::optimizations::Level::One)
                 .map_err(|x| x.to_string())?
         } else {
