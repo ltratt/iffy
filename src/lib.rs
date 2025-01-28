@@ -674,7 +674,7 @@ where
 }
 
 /// Convert relative URLs to absolute URLs.
-pub fn absolute_urls<'a, 'b, It>(ev_in: It, host: &'b Url) -> impl Iterator<Item = Event<'a>> + '_
+pub fn absolute_urls<'a, 'b, It>(ev_in: It, host: &'b Url) -> impl Iterator<Item = Event<'a>> + 'b
 where
     It: Iterator<Item = Event<'a>> + 'b,
 {
