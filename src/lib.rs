@@ -52,6 +52,7 @@ pub struct Iffy {
     tera: Arc<Mutex<Tera>>,
     highlighter: Highlighter,
     path_filter: Option<Box<dyn Fn(&Path) -> bool + Send + Sync>>,
+    toml_filter: Option<Box<dyn Fn(&Path, &toml::Table) -> bool + Send + Sync>>,
     navcrumb_cache: Arc<Mutex<HashMap<String, String>>>,
     navcrumb_filter: Option<Box<dyn Fn(Vec<String>) -> Vec<String> + Send + Sync>>,
     toml_processor: Option<
@@ -86,6 +87,7 @@ impl Iffy {
             ))))),
             highlighter: Highlighter::new(syntect_theme).unwrap(),
             path_filter: None,
+            toml_filter: None,
             navcrumb_cache: Arc::new(Mutex::new(HashMap::new())),
             navcrumb_filter: None,
             toml_processor: None,
@@ -124,6 +126,15 @@ impl Iffy {
         F: Fn(&Path) -> bool + Send + Sync + 'static,
     {
         self.path_filter = Some(Box::new(f));
+    }
+
+    /// For each path found in [self.src_dir] that is TOML, call `f`, and exclude the path from consideration if
+    /// `f` returns false.
+    pub fn toml_filter<F>(&mut self, f: F)
+    where
+        F: Fn(&Path, &toml::Table) -> bool + Send + Sync + 'static,
+    {
+        self.toml_filter = Some(Box::new(f));
     }
 
     pub fn navcrumb_filter<F>(&mut self, f: F)
@@ -294,6 +305,11 @@ impl Iffy {
         } else {
             toml = toml::Table::new();
             bodytxt = &d;
+        }
+        if let Some(tf) = &self.toml_filter {
+            if !tf(inp, &toml) {
+                return Ok(None);
+            }
         }
         if let Some(tpp) = &self.toml_processor {
             toml = tpp(inp, toml)?;
