@@ -51,7 +51,7 @@ pub struct Iffy {
     output_dir: PathBuf,
     tera: Arc<Mutex<Tera>>,
     highlighter: Highlighter,
-    file_filter: Option<Box<dyn Fn(&Path) -> bool + Send + Sync>>,
+    path_filter: Option<Box<dyn Fn(&Path) -> bool + Send + Sync>>,
     navcrumb_cache: Arc<Mutex<HashMap<String, String>>>,
     navcrumb_filter: Option<Box<dyn Fn(Vec<String>) -> Vec<String> + Send + Sync>>,
     toml_processor: Option<
@@ -85,7 +85,7 @@ impl Iffy {
                 templates_dir.as_path().to_str().unwrap()
             ))))),
             highlighter: Highlighter::new(syntect_theme).unwrap(),
-            file_filter: None,
+            path_filter: None,
             navcrumb_cache: Arc::new(Mutex::new(HashMap::new())),
             navcrumb_filter: None,
             toml_processor: None,
@@ -119,11 +119,11 @@ impl Iffy {
 
     /// For each path found in [self.src_dir], call `f`, and exclude the path from consideration if
     /// `f` returns false.
-    pub fn file_filter<F>(&mut self, f: F)
+    pub fn path_filter<F>(&mut self, f: F)
     where
         F: Fn(&Path) -> bool + Send + Sync + 'static,
     {
-        self.file_filter = Some(Box::new(f));
+        self.path_filter = Some(Box::new(f));
     }
 
     pub fn navcrumb_filter<F>(&mut self, f: F)
@@ -166,7 +166,7 @@ impl Iffy {
             .map(|e| e.unwrap())
             .filter(|e| e.path().is_file())
         {
-            if let Some(ff) = &sa.file_filter {
+            if let Some(ff) = &sa.path_filter {
                 if !ff(e.path()) {
                     continue;
                 }
