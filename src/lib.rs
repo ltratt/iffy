@@ -216,6 +216,7 @@ impl Iffy {
             println!("{}", inp.to_str().unwrap());
         }
         if let Some(x) = inp.extension().map(|x| x.to_str().unwrap()) {
+            let mut processed = true;
             let outp = if x == MARKDOWN_EXTENSION {
                 self.process_md(inp)?
             } else if x == HTML_EXTENSION {
@@ -236,6 +237,7 @@ impl Iffy {
                 fs::write(&outp, d)?;
                 Some(outp)
             } else {
+                processed = false;
                 None
             };
             if let Some(outp) = outp {
@@ -252,6 +254,9 @@ impl Iffy {
                     gz.write_all(read_to_string(outp)?.as_bytes())?;
                     gz.finish()?;
                 }
+                return Ok(());
+            }
+            if processed {
                 return Ok(());
             }
         }
