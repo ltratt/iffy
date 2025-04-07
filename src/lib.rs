@@ -374,10 +374,10 @@ impl Iffy {
 
             match self.footnote_style {
                 FootnoteStyle::Plain => {
-                    rendered_fnotes.push(format!(r#"<div class="footnote_def"><a name="{hash}"><span style="padding-right: 1ch">[{off}]</span></a><div class="footnote_def_body">{fnote_body}</div></div>"#));
+                    rendered_fnotes.push(format!(r#"<div class="footnote_def"><a name="{hash}"><span style="padding-right: 1ch" class="footnote_name">{off}</span></a><div class="footnote_def_body">{fnote_body}</div></div>"#));
                 }
                 FootnoteStyle::Popup => {
-                    rendered_fnotes.push(format!(r#"<div class="footnote_def"><a name="{hash}"><span style="padding-right: 1ch">[{off}]</span></a><div class="footnote_def_body">{fnote_body}</div></div>"#));
+                    rendered_fnotes.push(format!(r#"<div class="footnote_def"><a name="{hash}"><span style="padding-right: 1ch" class="footnote_name"">{off}</span></a><div class="footnote_def_body">{fnote_body}</div></div>"#));
                     rendered_fnotes.push(format!(r#"<div id="pu_{hash}" class="footnote_pu" onclick="this.style.display='none'"><div class="footnote_close"><span class="footnote_close_icon">☒</span></div>{fnote_body}</div>"#));
                 }
             }
@@ -539,7 +539,15 @@ impl Iffy {
         let mut fnotes = Vec::new();
         let mut fnotes_seen = HashMap::new();
         let mut fnote = None;
-        for e in ev_in {
+        let mut iter = ev_in.into_iter().peekable();
+        while let Some(mut e) = iter.next() {
+            if let Some(Event::FootnoteReference(_)) = iter.peek() {
+                match e {
+                    Event::Text(t) => e = Event::Text(t.to_string().trim_end().to_string().into()),
+                    Event::SoftBreak => continue,
+                    _ => ()
+                }
+            }
             match e {
                 Event::Start(Tag::FootnoteDefinition(name)) => {
                     assert!(fnote.is_none());
@@ -558,11 +566,11 @@ impl Iffy {
                     let hash = hash_link(self.footnote_seed, inp, &name);
                     match self.footnote_style {
                         FootnoteStyle::Plain => {
-                            ev_out.push(Event::Html(format!("[{}]", fnotes_seen.len()).into()));
+                            ev_out.push(Event::Html(format!(r#"<span class="footnote_name">{}</span>"#, fnotes_seen.len()).into()));
                         }
                         FootnoteStyle::Popup => {
                             ev_out.push(Event::Html(
-                    format!(r#"<span class="footnote_ref"><a href="javascript:;" onclick="e=document.getElementById('pu_{hash}');e.style.top=this.offsetTop+'px';e.style.display='block';">[{}]</a></span>"#, fnotes_seen.len()).into()
+                    format!(r#"<span class="footnote_name"><a href="javascript:;" onclick="e=document.getElementById('pu_{hash}');e.style.top=this.offsetTop+'px';e.style.display='block';">{}</a></span>"#, fnotes_seen.len()).into()
                 ));
                         }
                     }
