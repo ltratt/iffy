@@ -352,7 +352,7 @@ impl Iffy {
             ev.into_iter().collect::<Vec<_>>()
         };
         let ev = titles_to_links(ev);
-        let ev = img_to_video(ev.into_iter());
+        let ev = imgs(ev.into_iter());
         let ev = self.highlighter.highlight(ev.into_iter())?;
         // Footnote extraction must come last as it extracts data (i.e. if it comes earlier in the
         // chain, things like syntax highlighting won't apply to footnotes).
@@ -672,30 +672,29 @@ where
     ev_out.into_iter()
 }
 
-/// Rewrite `<img src="x.mp4">` to `<video><source src="x.mp4"></video>`.
-pub fn img_to_video<'a, It>(ev_in: It) -> impl Iterator<Item = Event<'a>>
+/// Process image tags
+pub fn imgs<'a, It>(ev_in: It) -> impl Iterator<Item = Event<'a>>
 where
     It: Iterator<Item = Event<'a>>,
 {
     ev_in.into_iter().map(|e| match e {
         Event::Start(Tag::Image {
-            link_type,
+            link_type: _,
             dest_url,
             title,
-            id,
+            id: _,
         }) => {
             if dest_url.as_ref().ends_with(".mp4") {
+                // Rewrite `<img src="x.mp4">` to `<video><source src="x.mp4"></video>`.
                 Event::Html(CowStr::from(format!(
                     r#"<video controls><source src="{}" type="video/mp4" /><a href="{}">[Video]</a></video>"#,
                     dest_url.as_ref(), dest_url.as_ref()
                 )))
+            } else if title.starts_with("css") {
+                let css = title.trim_start_matches("css").trim_start_matches(" ");
+                Event::Html(CowStr::from(format!(r#"<img src="{}" style="{css}"/>"#, dest_url.as_ref())))
             } else {
-                Event::Start(Tag::Image {
-                    link_type,
-                    dest_url,
-                    title,
-                    id,
-                })
+                Event::Html(CowStr::from(format!(r#"<img src="{}"/>"#, dest_url.as_ref())))
             }
         }
         x => x,
