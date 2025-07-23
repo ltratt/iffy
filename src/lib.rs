@@ -677,28 +677,53 @@ pub fn imgs<'a, It>(ev_in: It) -> impl Iterator<Item = Event<'a>>
 where
     It: Iterator<Item = Event<'a>>,
 {
-    ev_in.into_iter().map(|e| match e {
-        Event::Start(Tag::Image {
-            link_type: _,
-            dest_url,
-            title,
-            id: _,
-        }) => {
-            if dest_url.as_ref().ends_with(".mp4") {
-                // Rewrite `<img src="x.mp4">` to `<video><source src="x.mp4"></video>`.
-                Event::Html(CowStr::from(format!(
-                    r#"<video controls><source src="{}" type="video/mp4" /><a href="{}">[Video]</a></video>"#,
-                    dest_url.as_ref(), dest_url.as_ref()
-                )))
-            } else if title.starts_with("css") {
-                let css = title.trim_start_matches("css").trim_start_matches(" ");
-                Event::Html(CowStr::from(format!(r#"<img src="{}" style="{css}"/>"#, dest_url.as_ref())))
-            } else {
-                Event::Html(CowStr::from(format!(r#"<img src="{}"/>"#, dest_url.as_ref())))
+    let mut ev_in = ev_in.into_iter().peekable();
+    let mut ev_out = Vec::new();
+    let mut next = ev_in.next();
+    while let Some(e) = next {
+        match e {
+            Event::Start(Tag::Image {
+                link_type: _,
+                dest_url,
+                title,
+                id: _,
+            }) => {
+                let alt = if let Some(Event::Text(s)) = ev_in.peek() {
+                    let alt = format!(r#"alt="{s}""#);
+                    ev_in.next();
+                    alt
+                } else {
+                    "".to_owned()
+                };
+                let e = if dest_url.as_ref().ends_with(".mp4") {
+                    // Rewrite `<img src="x.mp4">` to `<video><source src="x.mp4"></video>`.
+                    Event::Html(CowStr::from(format!(
+                        r#"<video controls><source src="{}" type="video/mp4" {alt}/><a href="{}">[Video]</a></video>"#,
+                        dest_url.as_ref(),
+                        dest_url.as_ref()
+                    )))
+                } else if title.starts_with("css") {
+                    let css = title.trim_start_matches("css").trim_start_matches(" ");
+                    Event::Html(CowStr::from(format!(
+                        r#"<img src="{}" {alt} style="{css}"/>"#,
+                        dest_url.as_ref()
+                    )))
+                } else {
+                    Event::Html(CowStr::from(format!(
+                        r#"<img src="{}" {alt}/>"#,
+                        dest_url.as_ref()
+                    )))
+                };
+                ev_out.push(e);
+                next = ev_in.next();
+            }
+            _ => {
+                ev_out.push(e);
+                next = ev_in.next();
             }
         }
-        x => x,
-    })
+    }
+    ev_out.into_iter()
 }
 
 /// Convert relative URLs to absolute URLs.
